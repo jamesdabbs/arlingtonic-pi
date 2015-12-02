@@ -1,0 +1,72 @@
+# Adapted from code by Darin Wilson, see
+# * https://gist.github.com/darinwilson/a3e5909db339838a67fe
+# * https://www.youtube.com/watch?v=exZTxhH06tw
+
+use_bpm 120
+
+# Kit selection
+
+drum_kits = {
+  acoustic: {
+    hat:   :drum_cymbal_closed,
+    kick:  :drum_bass_hard,
+    snare: :drum_snare_hard
+  },
+  acoustic_soft: {
+    hat:   :drum_cymbal_closed,
+    kick:  :drum_bass_soft,
+    snare: :drum_snare_soft
+  },
+  electro: {
+    hat:   :elec_triangle,
+    kick:  :elec_soft_kick,
+    snare: :elec_hi_snare
+  },
+  toy: {
+    hat:   :elec_tick,
+    kick:  :elec_hollow_kick,
+    snare: :elec_pop
+  }
+}
+current_drum_kit = drum_kits[:acoustic]
+
+define :use_kit do |kit_name|
+  current_drum_kit = drum_kits[kit_name]
+end
+
+# Timing!
+
+dm   = OSC::Client.new "localhost", 3333
+beat = OSC::Message.new("/beat")
+
+live_loop :beat do
+  dm.send beat
+  sleep 1
+end
+
+live_loop :bar do
+  sync :beat
+  sleep 4
+end
+
+define :run_pattern do |name, pattern|
+  live_loop name do
+    sync :bar
+    pattern.each do |p|
+      sample current_drum_kit[name], amp: (p/100.0)
+      sleep 0.5
+    end
+  end
+end
+
+define :hat do |pattern|
+  run_pattern :hat, pattern
+end
+
+define :kick do |pattern|
+  run_pattern :kick, pattern
+end
+
+define :snare do |pattern|
+  run_pattern :snare, pattern
+end
